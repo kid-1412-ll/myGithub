@@ -183,9 +183,9 @@ int main() {
 
 **题意**：给定$n(2 \leq n \leq 3 \cdot 10^5)$个非负整数$(0 \leq a_i \leq 2^{30}-1)$的数组，求一个尽可能大的子集满足集合中任意两个数亦或的值不小于$k(0 \leq k \leq 2^{30}-1)$。
 
-**解法**：首先存在结论：将集合有序排列之后，集合任意两个数亦或的最小值一定出现在相邻两数之间。易证：若$a<b<c$，则有$min(a \bigoplus b , b \bigoplus c) \leq (a \bigoplus c)$。
+**解法**：首先存在结论：将集合有序排列之后，集合任意两个数亦或的最小值一定出现在相邻两数之间。易证：若$a \lt b \lt c$，则有$min(a \bigoplus b , b \bigoplus c) \leq (a \bigoplus c)$。
 
-​	数组有序排列后求最大子集，设$dp[i]$表示以第$i$个数结尾的最大子集大小，则有$dp[i]=max(dp[j])+1，j<i且a_i \bigoplus a_j \geq k$。
+​	数组有序排列后求最大子集，设$dp[i]$表示以第$i$个数结尾的最大子集大小，则有$dp[i]=max(dp[j])+1，j \lt i且a_i \bigoplus a_j \geq k$。
 
 ​	现在问题变成如何快速的求出$max(dp[j])$，可以维护一棵trie，每个结点记录子树下的最大值，再根据亦或运算的性质可以在$\ln{a_i}$的复杂度下遍历`trie`得到结果。
 
