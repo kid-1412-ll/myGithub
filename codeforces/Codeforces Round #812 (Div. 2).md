@@ -312,5 +312,131 @@ int main() {
 
 ## F. Lost Array
 
-**ORZ**：2900分的数学题，目前完全写不动。看题解需要[Pascal's Triangle](https://en.wikipedia.org/wiki/Pascal's_triangle)、[Lucas Theorem](https://en.wikipedia.org/wiki/Lucas's_theorem)、[Zeta transform](https://codeforces.com/blog/entry/45223)、[Mobius transform](https://codeforces.com/blog/entry/72488)这些前置知识。
+#### Hint 0
+
+有没有答案不存在的情况？如果存在，是否有多个？
+
+答案一定存在，且唯一。根据异或运算的性质有 $b_{i,j-1} = b_{i,j} \oplus b_{i-1,j}$，那可以从矩阵的右下角往左上角依次反推出整个矩阵，从而求出唯一解。
+
+#### Hint 1
+
+如何计算 $a_i$ 对 $b_{j,n}$ 的贡献值？
+
+类似于[Pascal's Triangle(杨辉三角)](https://en.wikipedia.org/wiki/Pascal%27s_triangle)的计算，$a_i$ 对 $b_{j,n}$ 贡献的次数为 $\binom{(n-i) + (j-1)}{j-1}$。根据异或运算的性质当 $a_i$ 出现奇数次时对 $b_{j,n}$ 的贡献为 $a_i$，否则为0。
+
+#### Hint 2
+
+先考虑逆向问题：给定数组 a，构造所有的 $b_{j,n}$，怎么快速解决这个问题？
+
+根据[Lucas Theorem](https://en.wikipedia.org/wiki/Lucas's_theorem)，当 $(n - i)\ AND\ (j - 1) = 0$ 时 $\binom{(n-i) + (j-1)}{j-1}$ 为奇数 $\rightarrow (n - i)$ 是 $\sim(j - 1)$ 的子码。定义 $m$ 是满足 $m = 2^k$ 且 $m \ge n$ 的最小值，令 $b'_j = b_{\sim(j - 1)}$，则 $b'$ 是 $a$ 的 [Zeta transform](https://codeforces.com/blog/entry/45223)，可以使用 [SOS DP](http://www.kindkidll.com/index.php/archives/210/) 解决。
+$$
+b_j 
+= \sum_{n-i \subseteq \sim(j-1)} a_i 
+= \sum_{i \subseteq \sim(j-1)} a_{n-i} \\
+
+b'_j 
+= b_{\sim(j - 1)} 
+= b_{(m - 1) - (j - 1)} 
+= \sum_{i \subseteq \sim((m - 1) - j)} a_{n-i}
+= \sum_{i \subseteq j} a_{n-i}
+$$
+
+#### Hint 3
+
+先考虑更简单的问题：用和矩阵 $b$ 相同的方式构造大小为 $(2n + 1) \times (n + 1)$ 的矩阵 $g$，怎么求解数组 $a$？
+
+令$g'_j = g_{\sim(j - 1)}$，可以在矩阵 $g'$ 上使用 [Mobius transform](https://codeforces.com/blog/entry/72488) 来得到数组 $a$，由于是异或操作，mobius transform和zeta transform是相同的。
+$$
+a_{n-j} = \sum_{i \subseteq j} g'_i
+$$
+
+#### 解决
+
+结合Hint 2和Hint 3即可解决这个问题，但有一点不同的是，我们并不知道 $b'$ 在 $[0,m-n)$ 中的值。zeta transform可以看作一个高维前缀和，使用容斥原理可以从从高维前缀和中还原出单点的值，具体看[整除偏序的结构、zeta变换、Möbius变换、lcm卷积、gcd卷积](https://www.luogu.com.cn/paste/ljlnucke)这篇文章。在这里可以执行以下操作得到 $b'$ 的值。
+$$
+c_j =
+\begin{cases}
+0, \quad 0 \leq i \lt m-n \\
+\sum_{j \subseteq i} b'_i, \quad m-n \leq i \lt m
+\end{cases}
+
+\quad  \rightarrow \quad 
+
+b'_j = \sum_{j \subseteq i} c_i
+$$
+具体步骤如下：
+
+- 定义 $b'_j = b_{\sim(j - 1)}$ 并计算所有区间内的值。
+- 对 $b'$ 使用mobius transform得到 $a'$。
+- 由 $a'$ 得到 $a$。
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define LL long long
+const int INF = 0x3f3f3f3f;     ///1 061 109 567
+const int negative_infinite = 0xcfcfcfcf;   ///-808 464 433
+const double pi = acos(-1);
+const LL mod = 1e9 + 7;
+const double eps = 1e-8;
+const int MAXN = 1e6 + 117;
+const int MAXM = 1e6 + 117;
+
+int n;
+int m, lm, all1;
+int a[MAXN], b[MAXN];
+int tb[MAXN], c[MAXN];
+void buildB() {
+    //原数组 b 只有[1,n]有值
+    for(int i = 1; i <= n; i++) tb[all1 ^ (i - 1)] = b[i];
+
+    //先翻转变成子集求和问题
+    for(int i = 0; i < n; i++) {
+        c[i] = tb[i ^ all1];
+    }
+    //第一次求和
+    for(int i = 0; i < lm; i++) {
+        for(int mask = 0; mask < n; mask++) {
+            if((mask >> i) & 1) {
+                c[mask] ^= c[mask ^ (1 << i)];
+            }
+        }
+    }
+    //获取翻转后的b'
+    for(int i = 0; i < lm; i++) {
+        for(int mask = 0; mask < m; mask++) {
+            if((mask >> i) & 1) {
+                c[mask] ^= c[mask ^ (1 << i)];
+            }
+        }
+    }
+    //获取b'
+    for(int i = 0; i < m; i++) {
+        tb[i] = c[i ^ all1];
+    }
+}
+int main() {
+    scanf("%d", &n);
+    m = 1 << __lg(n);
+    if(m < n) m <<= 1;
+    lm = __lg(m);
+    all1 = m - 1;
+
+    for(int i = 1; i <= n; i++) scanf("%d", &b[i]);
+    buildB();
+
+    //mobius transform
+    for(int i = 0; i < lm; i++) {
+        for(int mask = 0; mask < m; mask++) {
+            if((mask >> i) & 1) {
+                tb[mask] ^= tb[mask ^ (1 << i)];
+            }
+        }
+    }
+
+    for(int i = 1; i <= n; i++) a[i] = tb[n - i];
+    for(int i = 1; i <= n; i++) printf("%d ", a[i]);
+    return 0;
+}
+```
 
