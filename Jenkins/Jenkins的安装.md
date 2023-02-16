@@ -18,14 +18,14 @@
 ```shell
 docker pull jenkins/jenkins:2.346.2
 docker run \
-> -d \
-> -u root \
-> -p 10100:8080 \
-> -p 50000:50000 \
-> --name jenkins \
-> -v /home/jenkins_home:/mydata/jenkins \
-> -v /etc/localtime:/etc/localtime \
-> jenkins/jenkins:2.346.2
+ -d \
+ -u root \
+ -p 10100:8080 \
+ -p 50000:50000 \
+ --name jenkins \
+ -v /home/jenkins_home:/mydata/jenkins \
+ -v /etc/localtime:/etc/localtime \
+ jenkins/jenkins:2.346.2
 ```
 
 网页访问`ip:10100`，等待Jenkins初始化完成
